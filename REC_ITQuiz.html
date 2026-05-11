@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IT Quiz — Rajalakshmi Engineering College</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden}
+body{background:#06030f;font-family:'Share Tech Mono',monospace;color:#fff}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:#06030f}
+::-webkit-scrollbar-thumb{background:linear-gradient(#00f5ff,#ff00ff);border-radius:2px}
+
+canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* Blobs */
+.blob{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;opacity:.35;animation:blobMove ease-in-out infinite}
+@keyframes blobMove{0%,100%{transform:scale(1) translate(0,0)}33%{transform:scale(1.1) translate(40px,-30px)}66%{transform:scale(.9) translate(-30px,40px)}}
+
+/* Shooting stars */
+.star{position:fixed;z-index:0;pointer-events:none;animation:shoot linear infinite}
+@keyframes shoot{0%{opacity:0;transform:translate(0,0) rotate(-45deg) scaleX(0)}10%{opacity:1}90%{opacity:1}100%{opacity:0;transform:translate(600px,600px) rotate(-45deg) scaleX(1)}}
+
+/* Grid */
+.grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;
+background-image:linear-gradient(rgba(0,245,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,.04) 1px,transparent 1px);
+background-size:50px 50px}
+
+/* Scan line */
+.scan{position:fixed;left:0;right:0;height:2px;z-index:1;pointer-events:none;
+background:linear-gradient(90deg,transparent,rgba(0,245,255,.6),rgba(255,0,255,.4),transparent);
+animation:scan 5s linear infinite}
+@keyframes scan{0%{top:-2%;opacity:0}5%{opacity:1}95%{opacity:1}100%{top:102%;opacity:0}}
+
+/* Corner decorations */
+.corner{position:fixed;width:60px;height:60px;z-index:1;pointer-events:none}
+.corner svg{width:100%;height:100%}
+.c-tl{top:10px;left:10px}
+.c-tr{top:10px;right:10px;transform:scaleX(-1)}
+.c-bl{bottom:10px;left:10px;transform:scaleY(-1)}
+.c-br{bottom:10px;right:10px;transform:scale(-1)}
+
+/* Keyframes */
+@keyframes fadeUp {from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn {from{opacity:0}to{opacity:1}}
+@keyframes float  {0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes blink  {0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes glow   {0%,100%{text-shadow:0 0 10px currentColor,0 0 20px currentColor}50%{text-shadow:0 0 20px currentColor,0 0 40px currentColor,0 0 60px currentColor}}
+@keyframes rotate {from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes runBorder{0%{background-position:0 50%}100%{background-position:300% 50%}}
+@keyframes shimText{0%,100%{background-position:0%}50%{background-position:100%}}
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes popIn  {0%{transform:scale(.4);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+
+.fade-up {animation:fadeUp .5s ease forwards}
+.fade-in {animation:fadeIn .4s ease forwards}
+
+/* Glass card */
+.glass{
+  background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:16px;position:relative;overflow:hidden;
+}
+.glass-cyan {border-color:rgba(0,245,255,.25)}
+.glass-pink {border-color:rgba(255,0,255,.25)}
+
+/* Gradient text */
+.grad-text{
+  background:linear-gradient(90deg,#00f5ff,#ff00ff,#00ff88,#ff6600,#00f5ff);
+  background-size:300% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:shimText 4s linear infinite;
+}
+
+/* Animated border button */
+.btn{
+  position:relative;background:transparent;cursor:pointer;border:none;
+  font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;
+  text-transform:uppercase;padding:12px 26px;border-radius:8px;
+  color:#fff;transition:all .3s;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn::before{
+  content:'';position:absolute;inset:0;border-radius:8px;padding:1.5px;
+  background:linear-gradient(90deg,#00f5ff,#ff00ff,#00ff88,#ff6600,#00f5ff);
+  background-size:300% auto;
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  animation:runBorder 3s linear infinite;
+}
+.btn::after{content:'';position:absolute;inset:0;border-radius:8px;
+  background:linear-gradient(135deg,rgba(0,245,255,.12),rgba(255,0,255,.08));opacity:0;transition:opacity .3s}
+.btn:hover::after,.btn:active::after{opacity:1}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,245,255,.2)}
+.btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+
+/* Option buttons */
+.opt{
+  width:100%;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.1);border-radius:10px;
+  color:rgba(200,220,255,.8);font-family:'Share Tech Mono',monospace;
+  font-size:clamp(13px,3vw,15px);padding:14px 16px;text-align:left;
+  cursor:pointer;transition:all .25s;letter-spacing:.4px;
+  -webkit-tap-highlight-color:transparent;
+}
+.opt:hover:not(:disabled){border-color:rgba(0,245,255,.5);color:#00f5ff;background:rgba(0,245,255,.08);transform:translateX(4px)}
+.opt.correct{border-color:#00ff88 !important;color:#00ff88 !important;background:rgba(0,255,136,.12) !important;transform:translateX(4px)}
+.opt.wrong  {border-color:#ff4466 !important;color:#ff4466 !important;background:rgba(255,68,102,.12) !important}
+.opt:disabled{cursor:not-allowed}
+
+/* Input */
+.cyber-input{
+  width:100%;background:rgba(0,245,255,.05);
+  border:1px solid rgba(0,245,255,.25);border-radius:10px;
+  color:#00f5ff;font-family:'Share Tech Mono',monospace;
+  font-size:16px;padding:13px 16px;outline:none;letter-spacing:1.5px;transition:all .3s;
+}
+.cyber-input::placeholder{color:rgba(0,245,255,.25)}
+.cyber-input:focus{border-color:#00f5ff;background:rgba(0,245,255,.1);box-shadow:0 0 20px rgba(0,245,255,.15)}
+
+/* Progress segment */
+.seg{flex:1;height:5px;border-radius:2px;transition:background .4s}
+
+/* Timer ring */
+.timer-ring{transform:rotate(-90deg)}
+.timer-track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:4}
+.timer-fill {fill:none;stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .9s linear,stroke .3s}
+
+/* Responsive helpers */
+@media(max-width:480px){
+  .btn{padding:11px 18px;font-size:10px}
+  .opt{padding:12px 13px;font-size:13px}
+}
+
+/* Tag chip */
+.chip{
+  font-family:'Share Tech Mono';font-size:10px;letter-spacing:1px;
+  padding:4px 10px;border-radius:4px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.4)
+}
+
+/* Score grade badge */
+.grade-badge{
+  display:inline-block;font-family:'Orbitron';font-weight:700;
+  font-size:clamp(10px,2.5vw,13px);letter-spacing:2px;
+  padding:6px 18px;border-radius:20px;text-transform:uppercase;
+}
+
+/* LB table */
+.lb-head{display:grid;grid-template-columns:46px 1fr 68px 80px;padding:9px 14px;
+  background:rgba(0,245,255,.06);border-bottom:1px solid rgba(0,245,255,.1)}
+.lb-row{display:grid;grid-template-columns:46px 1fr 68px 80px;padding:13px 14px;
+  border-bottom:1px solid rgba(255,255,255,.04);align-items:center;transition:background .2s}
+.lb-row:hover{background:rgba(255,255,255,.03)}
+.lb-row.top{background:linear-gradient(90deg,rgba(0,255,136,.06),transparent)}
+
+@media(max-width:380px){
+  .lb-head,.lb-row{grid-template-columns:38px 1fr 56px 60px;padding:10px 10px}
+}
+</style>
+</head>
+<body>
+<!-- Static BG layers -->
+<canvas id="bg"></canvas>
+<div class="grid-overlay"></div>
+<div class="scan"></div>
+
+<!-- Blobs -->
+<div class="blob" style="width:500px;height:500px;top:-100px;left:-150px;background:radial-gradient(#7700ff,transparent);animation-duration:14s"></div>
+<div class="blob" style="width:400px;height:400px;top:20%;right:-100px;background:radial-gradient(#00f5ff,transparent);animation-duration:11s;animation-delay:-4s"></div>
+<div class="blob" style="width:350px;height:350px;bottom:-80px;left:30%;background:radial-gradient(#ff00ff,transparent);animation-duration:16s;animation-delay:-8s"></div>
+<div class="blob" style="width:300px;height:300px;bottom:20%;right:10%;background:radial-gradient(#ff6600,transparent);animation-duration:13s;animation-delay:-2s"></div>
+
+<!-- Corner SVGs -->
+<div class="corner c-tl"><svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 30 L2 2 L30 2" stroke="#00f5ff" stroke-width="1.5" opacity=".7"/><path d="M2 2 L12 2 L12 12" stroke="#ff00ff" stroke-width="1" opacity=".5"/><circle cx="2" cy="2" r="2" fill="#00f5ff"/></svg></div>
+<div class="corner c-tr"><svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 30 L2 2 L30 2" stroke="#00f5ff" stroke-width="1.5" opacity=".7"/><path d="M2 2 L12 2 L12 12" stroke="#ff00ff" stroke-width="1" opacity=".5"/><circle cx="2" cy="2" r="2" fill="#00f5ff"/></svg></div>
+<div class="corner c-bl"><svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 30 L2 2 L30 2" stroke="#00f5ff" stroke-width="1.5" opacity=".7"/><path d="M2 2 L12 2 L12 12" stroke="#ff00ff" stroke-width="1" opacity=".5"/><circle cx="2" cy="2" r="2" fill="#00f5ff"/></svg></div>
+<div class="corner c-br"><svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 30 L2 2 L30 2" stroke="#00f5ff" stroke-width="1.5" opacity=".7"/><path d="M2 2 L12 2 L12 12" stroke="#ff00ff" stroke-width="1" opacity=".5"/><circle cx="2" cy="2" r="2" fill="#00f5ff"/></svg></div>
+
+<div id="root" style="position:relative;z-index:2;min-height:100vh"></div>
+
+<!-- Canvas particle + matrix script -->
+<script>
+(function(){
+  const canvas=document.getElementById('bg');
+  const ctx=canvas.getContext('2d');
+  let W,H,particles=[],matrix=[],cols,drops;
+  const COLORS=['#00f5ff','#ff00ff','#00ff88','#ff6600','#8800ff','#ffcc00'];
+
+  function resize(){
+    W=canvas.width=window.innerWidth;
+    H=canvas.height=window.innerHeight;
+    // reinit matrix
+    cols=Math.floor(W/18);
+    drops=Array(cols).fill(1);
+    // reinit particles
+    particles=[];
+    for(let i=0;i<80;i++) particles.push(mkP());
+  }
+
+  function mkP(){
+    return{
+      x:Math.random()*W,y:Math.random()*H,
+      vx:(Math.random()-.5)*.6,vy:(Math.random()-.5)*.6,
+      r:Math.random()*2+.5,
+      col:COLORS[Math.floor(Math.random()*COLORS.length)],
+      life:Math.random(),speed:Math.random()*.01+.003
+    }
+  }
+
+  // Shooting stars
+  const stars=[];
+  for(let i=0;i<6;i++) stars.push({
+    x:Math.random()*W,y:Math.random()*H*.5,
+    len:Math.random()*120+60,speed:Math.random()*4+3,
+    col:COLORS[Math.floor(Math.random()*COLORS.length)],
+    delay:Math.random()*6000,lastFire:-9999
+  });
+
+  let lastT=0;
+  function draw(t){
+    requestAnimationFrame(draw);
+    ctx.clearRect(0,0,W,H);
+
+    // Matrix rain
+    ctx.font='13px Share Tech Mono';
+    for(let i=0;i<cols;i++){
+      const ch=String.fromCharCode(0x30A0+Math.random()*96);
+      const x=i*18, y=drops[i]*18;
+      const col=COLORS[i%COLORS.length];
+      ctx.fillStyle=col+'22';
+      ctx.fillText(ch,x,y);
+      // head glow
+      ctx.fillStyle=col+'99';
+      ctx.fillText(ch,x,y);
+      if(y>H&&Math.random()>.97) drops[i]=0;
+      drops[i]+=(Math.random()>.7?1:0);
+    }
+
+    // Particles
+    particles.forEach((p,idx)=>{
+      p.x+=p.vx; p.y+=p.vy;
+      p.life+=p.speed;
+      if(p.x<0||p.x>W||p.y<0||p.y>H||p.life>1){ particles[idx]=mkP(); return; }
+      const alpha=Math.sin(p.life*Math.PI);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.col+Math.floor(alpha*200).toString(16).padStart(2,'0');
+      ctx.fill();
+      // glow
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r*3,0,Math.PI*2);
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*3);
+      g.addColorStop(0,p.col+Math.floor(alpha*80).toString(16).padStart(2,'0'));
+      g.addColorStop(1,'transparent');
+      ctx.fillStyle=g;
+      ctx.fill();
+    });
+
+    // Shooting stars
+    stars.forEach(s=>{
+      if(t-s.lastFire>s.delay+6000){
+        s.x=Math.random()*W*.5;
+        s.y=Math.random()*H*.3;
+        s.lastFire=t;
+      }
+      const elapsed=t-s.lastFire;
+      if(elapsed>s.delay&&elapsed<s.delay+1400){
+        const prog=(elapsed-s.delay)/1400;
+        const sx=s.x+prog*s.speed*80;
+        const sy=s.y+prog*s.speed*80;
+        const alpha=prog<.1?prog/.1:prog>.8?(1-prog)/.2:1;
+        const grad=ctx.createLinearGradient(sx,sy,sx-s.len*.7,sy-s.len*.7);
+        grad.addColorStop(0,s.col+Math.floor(alpha*255).toString(16).padStart(2,'0'));
+        grad.addColorStop(1,'transparent');
+        ctx.beginPath();
+        ctx.moveTo(sx,sy);
+        ctx.lineTo(sx-s.len*.7,sy-s.len*.7);
+        ctx.strokeStyle=grad;
+        ctx.lineWidth=2;
+        ctx.stroke();
+      }
+    });
+
+    lastT=t;
+  }
+
+  window.addEventListener('resize',resize);
+  resize();
+  requestAnimationFrame(draw);
+})();
+</script>
+
+<!-- REACT APP -->
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef}=React;
+
+const QUESTIONS=[
+  {q:"What does HTML stand for?",opts:["Hyper Text Markup Language","High Transfer Markup Language","Hyper Tool Multi Language","Home Text Markup Language"],ans:0},
+  {q:"Which language is used for styling web pages?",opts:["JavaScript","Python","CSS","TypeScript"],ans:2},
+  {q:"What does CPU stand for?",opts:["Central Process Unit","Central Processing Unit","Computer Processing Utility","Core Processing Unit"],ans:1},
+  {q:"What is the binary equivalent of decimal 10?",opts:["1010","1100","1001","0110"],ans:0},
+  {q:"Which protocol securely transfers data over the web?",opts:["FTP","HTTP","HTTPS","SMTP"],ans:2},
+  {q:"What does RAM stand for?",opts:["Read Access Memory","Random Access Memory","Rapid Application Memory","Remote Array Module"],ans:1},
+  {q:"Which of these is NOT an operating system?",opts:["Ubuntu","macOS","Django","Windows 11"],ans:2},
+  {q:"What does SQL stand for?",opts:["Structured Query Language","Simple Query Logic","System Query Layer","Sequential Queue Language"],ans:0},
+  {q:"What does API stand for?",opts:["Application Programming Interface","Automated Program Integration","Applied Process Interface","Application Protocol Input"],ans:0},
+  {q:"Which data structure follows the LIFO principle?",opts:["Queue","Array","Stack","Linked List"],ans:2},
+  {q:"What is the primary function of a firewall in networking?",opts:["Speed up internet","Monitor hardware","Block unauthorized access","Store data"],ans:2},
+  {q:"Which company developed the Java programming language?",opts:["Microsoft","Sun Microsystems","Apple","IBM"],ans:1},
+  {q:"What does URL stand for?",opts:["Universal Resource Locator","Uniform Resource Locator","Unified Record Link","Universal Record Layer"],ans:1},
+  {q:"In cloud computing, what does SaaS stand for?",opts:["Software as a Service","System as a Server","Security as a Solution","Storage and a Service"],ans:0},
+  {q:"Which sorting algorithm has the best average-case time complexity O(n log n)?",opts:["Bubble Sort","Insertion Sort","Merge Sort","Selection Sort"],ans:2},
+];
+
+const TIMER=20;
+const MEDALS=["🥇","🥈","🥉"];
+const COLORS=["#00f5ff","#ff00ff","#00ff88","#ff6600","#8800ff","#ffcc00"];
+
+function loadBoard(){try{return JSON.parse(localStorage.getItem("rec_itquiz")||"[]")}catch{return[]}}
+function saveBoard(b){try{localStorage.setItem("rec_itquiz",JSON.stringify(b))}catch{}}
+
+/* ── Timer Ring ── */
+function TimerRing({val,max}){
+  const R=28,C=2*Math.PI*R;
+  const pct=val/max;
+  const col=val<=5?"#ff4466":val<=10?"#ffcc00":"#00f5ff";
+  const dashoff=C*(1-pct);
+  return(
+    <div style={{position:"relative",width:72,height:72,flexShrink:0}}>
+      <svg width="72" height="72" className="timer-ring">
+        <circle className="timer-track" cx="36" cy="36" r={R}/>
+        <circle className="timer-fill" cx="36" cy="36" r={R}
+          stroke={col} strokeDasharray={C}
+          strokeDashoffset={dashoff}
+          style={{transition:"stroke-dashoffset .9s linear,stroke .3s",transformOrigin:"center",transform:"rotate(-90deg)"}}
+        />
+      </svg>
+      <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+        <span style={{fontFamily:"'Orbitron'",fontSize:18,fontWeight:900,color:col,animation:val<=5?"blink .5s infinite":"none",lineHeight:1}}>{val}</span>
+        <span style={{fontFamily:"'Share Tech Mono'",fontSize:8,color:"rgba(255,255,255,.3)",letterSpacing:1}}>SEC</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── College Header ── */
+function CollegeHeader(){
+  return(
+    <div style={{textAlign:"center",marginBottom:4}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:6}}>
+        {/* Logo rings */}
+        <div style={{position:"relative",width:44,height:44,flexShrink:0}}>
+          <div style={{position:"absolute",inset:0,border:"2px solid #00f5ff",borderRadius:"50%",animation:"rotate 4s linear infinite"}}/>
+          <div style={{position:"absolute",inset:5,border:"2px solid #ff00ff",borderRadius:"50%",animation:"rotate 3s linear infinite reverse"}}/>
+          <div style={{position:"absolute",inset:10,border:"1.5px solid #00ff88",borderRadius:"50%",animation:"rotate 2s linear infinite"}}/>
+          <div style={{position:"absolute",inset:15,borderRadius:"50%",background:"radial-gradient(#00f5ff,#ff00ff)",opacity:.6}}/>
+        </div>
+        <div style={{textAlign:"left"}}>
+          <div style={{fontFamily:"'Orbitron'",fontSize:"clamp(10px,2.5vw,13px)",fontWeight:700,
+            background:"linear-gradient(90deg,#00f5ff,#ff00ff,#00ff88)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+            backgroundClip:"text",letterSpacing:1,lineHeight:1.2}}>
+            RAJALAKSHMI ENGINEERING COLLEGE
+          </div>
+          <div style={{fontFamily:"'Share Tech Mono'",fontSize:"clamp(8px,2vw,10px)",color:"rgba(255,255,255,.3)",letterSpacing:2,marginTop:2}}>
+            DEPARTMENT OF INFORMATION TECHNOLOGY
+          </div>
+        </div>
+      </div>
+      {/* Divider */}
+      <div style={{height:1,background:"linear-gradient(90deg,transparent,#00f5ff,#ff00ff,#00ff88,transparent)",margin:"0 auto",maxWidth:500,marginTop:8,opacity:.6}}/>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App(){
+  const [screen,  setScreen]  = useState("home");
+  const [name,    setName]    = useState("");
+  const [current, setCurrent] = useState(0);
+  const [selected,setSelected]= useState(null);
+  const [answers, setAnswers] = useState([]);
+  const [score,   setScore]   = useState(0);
+  const [timer,   setTimer]   = useState(TIMER);
+  const [animIn,  setAnimIn]  = useState(true);
+  const [board,   setBoard]   = useState(loadBoard);
+
+  /* Timer */
+  useEffect(()=>{
+    if(screen!=="quiz"||selected!==null)return;
+    if(timer<=0){advance(-1,score,answers);return}
+    const t=setTimeout(()=>setTimer(v=>v-1),1000);
+    return()=>clearTimeout(t);
+  });
+
+  const advance=useCallback((sel,curScore,curAns)=>{
+    const ok=sel===QUESTIONS[current].ans;
+    const ns=curScore+(ok?1:0);
+    const na=[...curAns,sel];
+    if(current<QUESTIONS.length-1){
+      setAnimIn(false);
+      setTimeout(()=>{setSelected(null);setCurrent(c=>c+1);setScore(ns);setAnswers(na);setTimer(TIMER);setAnimIn(true)},350);
+    } else {
+      setScore(ns);setAnswers(na);
+      const entry={name,score:ns,time:new Date().toLocaleDateString("en-IN")};
+      const updated=[...board,entry].sort((a,b)=>b.score-a.score);
+      setBoard(updated);saveBoard(updated);
+      setTimeout(()=>setScreen("result"),500);
+    }
+  },[current,board,name]);
+
+  const pick=(i)=>{
+    if(selected!==null)return;
+    setSelected(i);
+    setTimeout(()=>advance(i,score,answers),900);
+  };
+
+  const startQuiz=()=>{
+    if(!name.trim())return;
+    setCurrent(0);setScore(0);setAnswers([]);setSelected(null);setTimer(TIMER);setAnimIn(true);
+    setScreen("quiz");
+  };
+
+  const clearBoard=()=>{
+    if(!window.confirm("Clear all records?"))return;
+    setBoard([]);localStorage.removeItem("rec_itquiz");
+  };
+
+  const pct=(current/QUESTIONS.length)*100;
+  const timerCol=timer<=5?"#ff4466":timer<=10?"#ffcc00":"#00f5ff";
+
+  /* Wrap */
+  const wrap={minHeight:"100vh",padding:"clamp(16px,4vw,28px)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"};
+
+  /* ── HOME ── */
+  if(screen==="home") return(
+    <div className="fade-up" style={wrap}>
+      <div style={{width:"100%",maxWidth:520}}>
+        <CollegeHeader/>
+        {/* Title */}
+        <div style={{textAlign:"center",margin:"28px 0 24px"}}>
+          <h1 style={{fontFamily:"'Orbitron'",fontSize:"clamp(38px,10vw,72px)",fontWeight:900,lineHeight:1,
+            background:"linear-gradient(135deg,#00f5ff,#ff00ff,#00ff88,#ff6600,#00f5ff)",
+            backgroundSize:"300% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+            backgroundClip:"text",animation:"shimText 3s linear infinite"}}>
+            IT QUIZ
+          </h1>
+          <p style={{fontFamily:"'Rajdhani'",fontSize:"clamp(13px,3.5vw,18px)",color:"rgba(255,255,255,.4)",
+            letterSpacing:4,marginTop:6,fontWeight:600}}>CHALLENGE 2025</p>
+          {/* Chips */}
+          <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginTop:14}}>
+            {["15 Questions","20 sec / Q","Live Ranking"].map((t,i)=>(
+              <span key={t} className="chip" style={{borderColor:`${COLORS[i]}44`,color:COLORS[i]}}>{t}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Input card */}
+        <div className="glass glass-cyan" style={{padding:"clamp(20px,5vw,32px)"}}>
+          <div className="glass-top-line" style={{position:"absolute",top:0,left:"10%",right:"10%",height:1,background:"linear-gradient(90deg,transparent,#00f5ff,#ff00ff,transparent)"}}/>
+          <label style={{fontFamily:"'Orbitron'",fontSize:10,letterSpacing:3,
+            color:"rgba(0,245,255,.6)",display:"block",marginBottom:12}}>ENTER YOUR NAME</label>
+          <input className="cyber-input" placeholder="student_name" value={name}
+            onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&startQuiz()}/>
+          <div style={{display:"flex",gap:10,marginTop:22,flexWrap:"wrap"}}>
+            <button className="btn" onClick={startQuiz} disabled={!name.trim()}>▶ Start Quiz</button>
+            <button className="btn" onClick={()=>setScreen("dashboard")} style={{color:"#00ff88"}}>◈ Leaderboard</button>
+          </div>
+        </div>
+
+        <div style={{textAlign:"center",marginTop:18,fontFamily:"'Share Tech Mono'",fontSize:10,
+          color:"rgba(255,255,255,.15)",letterSpacing:2}}>
+          TOPICS: OS · NETWORKING · DSA · DBMS · CLOUD · WEB DEV
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── QUIZ ── */
+  if(screen==="quiz") return(
+    <div style={{...wrap,justifyContent:"flex-start",paddingTop:"clamp(16px,4vw,28px)"}}>
+      <div style={{width:"100%",maxWidth:640}}>
+        {/* College mini header */}
+        <div style={{textAlign:"center",marginBottom:14}}>
+          <span style={{fontFamily:"'Orbitron'",fontSize:9,letterSpacing:3,
+            background:"linear-gradient(90deg,#00f5ff,#ff00ff)",WebkitBackgroundClip:"text",
+            WebkitTextFillColor:"transparent",backgroundClip:"text"}}>
+            RAJALAKSHMI ENGINEERING COLLEGE — IT QUIZ
+          </span>
+        </div>
+
+        {/* Header row */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,gap:8,flexWrap:"wrap"}}>
+          <div className="glass" style={{padding:"10px 16px",flex:1,minWidth:100}}>
+            <div style={{fontFamily:"'Orbitron'",fontSize:8,letterSpacing:2,color:"rgba(0,245,255,.5)"}}>PLAYER</div>
+            <div style={{fontFamily:"'Orbitron'",fontSize:13,fontWeight:700,
+              background:"linear-gradient(90deg,#00f5ff,#ff00ff)",WebkitBackgroundClip:"text",
+              WebkitTextFillColor:"transparent",backgroundClip:"text",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              {name.toUpperCase()}
+            </div>
+          </div>
+          <div className="glass" style={{padding:"10px 16px",textAlign:"center"}}>
+            <div style={{fontFamily:"'Orbitron'",fontSize:8,letterSpacing:2,color:"rgba(0,255,136,.5)"}}>SCORE</div>
+            <div style={{fontFamily:"'Orbitron'",fontSize:20,fontWeight:900,color:"#00ff88"}}>
+              {score}<span style={{fontSize:11,opacity:.4}}>/{current}</span>
+            </div>
+          </div>
+          <TimerRing val={timer} max={TIMER}/>
+        </div>
+
+        {/* Progress */}
+        <div style={{marginBottom:20}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+            <span style={{fontFamily:"'Share Tech Mono'",fontSize:10,color:"rgba(255,255,255,.3)",letterSpacing:1}}>
+              Q {current+1} of {QUESTIONS.length}
+            </span>
+            <span style={{fontFamily:"'Orbitron'",fontSize:9,color:"rgba(255,255,255,.3)"}}>{Math.round(pct)}%</span>
+          </div>
+          {/* Gradient bar */}
+          <div style={{height:4,background:"rgba(255,255,255,.06)",borderRadius:2,overflow:"hidden"}}>
+            <div style={{height:"100%",width:`${pct}%`,
+              background:"linear-gradient(90deg,#00f5ff,#ff00ff,#00ff88)",transition:"width .4s ease",borderRadius:2}}/>
+          </div>
+          {/* Segment dots */}
+          <div style={{display:"flex",gap:3,marginTop:6}}>
+            {QUESTIONS.map((_,i)=>(
+              <div key={i} className="seg" style={{
+                background:i<current?(answers[i]===QUESTIONS[i].ans?"#00ff88":"#ff4466"):i===current?`linear-gradient(90deg,${COLORS[i%COLORS.length]},${COLORS[(i+1)%COLORS.length]})`:"rgba(255,255,255,.08)"
+              }}/>
+            ))}
+          </div>
+        </div>
+
+        {/* Question */}
+        <div key={current} className={animIn?"fade-up":""}>
+          <div className="glass glass-cyan" style={{padding:"clamp(18px,4vw,26px)",marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+              <div style={{fontFamily:"'Orbitron'",fontWeight:900,fontSize:"clamp(20px,5vw,32px)",
+                background:"linear-gradient(135deg,#00f5ff,#ff00ff)",WebkitBackgroundClip:"text",
+                WebkitTextFillColor:"transparent",backgroundClip:"text",flexShrink:0,lineHeight:1}}>
+                {String(current+1).padStart(2,"0")}
+              </div>
+              <p style={{fontFamily:"'Rajdhani'",fontSize:"clamp(15px,3.5vw,18px)",fontWeight:600,
+                color:"rgba(220,235,255,.9)",lineHeight:1.6,paddingTop:4}}>
+                {QUESTIONS[current].q}
+              </p>
+            </div>
+          </div>
+
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {QUESTIONS[current].opts.map((opt,i)=>{
+              let cls="opt";
+              if(selected!==null){
+                if(i===QUESTIONS[current].ans) cls+=" correct";
+                else if(i===selected&&selected!==QUESTIONS[current].ans) cls+=" wrong";
+              }
+              return(
+                <button key={i} className={cls} onClick={()=>pick(i)} disabled={selected!==null}>
+                  <span style={{
+                    background:`linear-gradient(135deg,${COLORS[i]},${COLORS[(i+1)%COLORS.length]})`,
+                    WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",
+                    fontFamily:"'Orbitron'",fontSize:10,fontWeight:700,marginRight:12
+                  }}>
+                    {["A","B","C","D"][i]}
+                  </span>
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ── RESULT ── */
+  if(screen==="result"){
+    const gradeCol=score>=12?"#00ff88":score>=8?"#ffcc00":"#ff4466";
+    const grade   =score>=12?"⚡ Expert Level":score>=8?"◈ Intermediate":"▲ Keep Learning";
+    const pctScore=Math.round((score/QUESTIONS.length)*100);
+    return(
+      <div className="fade-up" style={wrap}>
+        <div style={{width:"100%",maxWidth:580,textAlign:"center"}}>
+          <CollegeHeader/>
+          <div style={{margin:"24px 0 20px"}}>
+            <div style={{fontFamily:"'Share Tech Mono'",fontSize:10,letterSpacing:4,
+              color:"rgba(255,255,255,.3)",marginBottom:10}}>QUIZ COMPLETE</div>
+            <div style={{fontFamily:"'Orbitron'",fontSize:"clamp(80px,20vw,130px)",fontWeight:900,lineHeight:1,
+              background:`radial-gradient(${gradeCol},${gradeCol}88)`,
+              WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",
+              animation:"float 2.5s ease infinite, popIn .6s ease forwards",
+              filter:`drop-shadow(0 0 30px ${gradeCol}66)`}}>
+              {score}
+            </div>
+            <div style={{fontFamily:"'Share Tech Mono'",fontSize:14,color:"rgba(255,255,255,.3)",marginTop:4}}>
+              out of {QUESTIONS.length} &nbsp;·&nbsp; {pctScore}%
+            </div>
+            <div style={{margin:"14px auto",display:"inline-block",
+              padding:"6px 20px",borderRadius:20,
+              background:`linear-gradient(135deg,${gradeCol}22,${gradeCol}11)`,
+              border:`1px solid ${gradeCol}44`,
+              fontFamily:"'Orbitron'",fontSize:11,letterSpacing:2,color:gradeCol}}>
+              {grade}
+            </div>
+            <div style={{fontFamily:"'Rajdhani'",fontSize:15,color:"rgba(255,255,255,.25)",marginTop:4,letterSpacing:2}}>
+              {name.toUpperCase()}
+            </div>
+          </div>
+
+          {/* Answer review */}
+          <div style={{maxHeight:220,overflowY:"auto",display:"flex",flexDirection:"column",gap:5,marginBottom:22}}>
+            {QUESTIONS.map((q,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",
+                background:"rgba(255,255,255,.04)",borderRadius:8,
+                borderLeft:`3px solid ${answers[i]===q.ans?"#00ff88":"#ff4466"}`}}>
+                <span style={{fontFamily:"'Orbitron'",fontSize:9,color:"rgba(255,255,255,.25)",width:20,flexShrink:0}}>Q{i+1}</span>
+                <span style={{fontFamily:"'Share Tech Mono'",fontSize:11,color:"rgba(255,255,255,.4)",flex:1,
+                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textAlign:"left"}}>{q.q}</span>
+                <span style={{fontFamily:"'Share Tech Mono'",fontSize:11,flexShrink:0,
+                  color:answers[i]===q.ans?"#00ff88":"#ff4466"}}>
+                  {answers[i]===q.ans?"✓":"✗"}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+            <button className="btn" onClick={startQuiz}>↺ Retry</button>
+            <button className="btn" style={{color:"#00ff88"}} onClick={()=>setScreen("dashboard")}>◈ Leaderboard</button>
+            <button className="btn" onClick={()=>setScreen("home")}>⌂ Home</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── DASHBOARD ── */
+  if(screen==="dashboard"){
+    const avg=board.length?(board.reduce((s,x)=>s+x.score,0)/board.length).toFixed(1):0;
+    return(
+      <div className="fade-up" style={{...wrap,justifyContent:"flex-start",paddingTop:24}}>
+        <div style={{width:"100%",maxWidth:700}}>
+          <CollegeHeader/>
+
+          {/* Title row */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",margin:"20px 0 22px",flexWrap:"wrap",gap:12}}>
+            <h1 style={{fontFamily:"'Orbitron'",fontSize:"clamp(20px,6vw,36px)",fontWeight:900,
+              background:"linear-gradient(90deg,#00f5ff,#ff00ff,#00ff88)",
+              WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>
+              LEADERBOARD
+            </h1>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <button className="btn" style={{padding:"9px 16px",fontSize:10}} onClick={()=>setScreen("home")}>⌂ Home</button>
+              {board.length>0&&<button className="btn" style={{padding:"9px 16px",fontSize:10,color:"#ff4466"}} onClick={clearBoard}>✕ Clear</button>}
+            </div>
+          </div>
+
+          {/* Stats */}
+          {board.length>0&&(
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
+              {[
+                {label:"STUDENTS",val:board.length,col:"#00f5ff"},
+                {label:"TOP SCORE",val:`${board[0].score}/15`,col:"#00ff88"},
+                {label:"AVERAGE",val:`${avg}/15`,col:"#ffcc00"},
+              ].map(({label,val,col})=>(
+                <div key={label} className="glass" style={{padding:"14px 10px",textAlign:"center",borderColor:`${col}33`}}>
+                  <div style={{height:1,background:`linear-gradient(90deg,transparent,${col},transparent)`,position:"absolute",top:0,left:"10%",right:"10%"}}/>
+                  <div style={{fontFamily:"'Orbitron'",fontSize:8,letterSpacing:2,color:`${col}88`,marginBottom:8}}>{label}</div>
+                  <div style={{fontFamily:"'Orbitron'",fontSize:"clamp(16px,4.5vw,26px)",fontWeight:700,color:col}}>{val}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Score bars */}
+          {board.length>0&&(
+            <div className="glass" style={{padding:"18px 20px",marginBottom:18}}>
+              <div style={{fontFamily:"'Orbitron'",fontSize:9,letterSpacing:3,color:"rgba(255,255,255,.2)",marginBottom:14}}>
+                SCORE DISTRIBUTION — TOP 5
+              </div>
+              {board.slice(0,5).map((s,i)=>(
+                <div key={i} style={{marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                    <span style={{fontFamily:"'Share Tech Mono'",fontSize:12,color:"rgba(200,220,255,.7)"}}>{s.name}</span>
+                    <span style={{fontFamily:"'Orbitron'",fontSize:11,color:COLORS[i%COLORS.length]}}>{s.score}/15</span>
+                  </div>
+                  <div style={{height:7,background:"rgba(255,255,255,.06)",borderRadius:4,overflow:"hidden"}}>
+                    <div style={{
+                      height:"100%",borderRadius:4,
+                      width:`${(s.score/15)*100}%`,
+                      background:`linear-gradient(90deg,${COLORS[i%COLORS.length]},${COLORS[(i+1)%COLORS.length]})`,
+                      transition:"width .9s ease",boxShadow:`0 0 10px ${COLORS[i%COLORS.length]}66`
+                    }}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Table */}
+          {board.length===0?(
+            <div style={{textAlign:"center",padding:"60px 20px"}}>
+              <div style={{fontFamily:"'Orbitron'",fontSize:42,
+                background:"linear-gradient(135deg,#00f5ff22,#ff00ff22)",WebkitBackgroundClip:"text",
+                WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:14}}>◈</div>
+              <div style={{fontFamily:"'Share Tech Mono'",fontSize:13,color:"rgba(255,255,255,.15)",letterSpacing:2}}>NO RECORDS YET</div>
+              <button className="btn" style={{marginTop:20}} onClick={()=>setScreen("home")}>▶ Start Quiz</button>
+            </div>
+          ):(
+            <div className="glass" style={{overflow:"hidden"}}>
+              <div className="lb-head">
+                {["#","Student Name","Score","Date"].map(h=>(
+                  <div key={h} style={{fontFamily:"'Orbitron'",fontSize:8,letterSpacing:2,color:"rgba(0,245,255,.4)"}}>{h}</div>
+                ))}
+              </div>
+              {board.map((s,i)=>(
+                <div key={i} className={`lb-row${i===0?" top":""}`}>
+                  <div style={{fontFamily:"'Orbitron'",fontSize:14,fontWeight:700,
+                    color:i<3?["#ffd700","#c0c0c0","#cd7f32"][i]:"rgba(255,255,255,.15)"}}>
+                    {i<3?MEDALS[i]:String(i+1).padStart(2,"0")}
+                  </div>
+                  <div style={{fontFamily:"'Share Tech Mono'",fontSize:13,
+                    background:i===0?"linear-gradient(90deg,#00ff88,#00f5ff)":undefined,
+                    WebkitBackgroundClip:i===0?"text":undefined,WebkitTextFillColor:i===0?"transparent":undefined,
+                    backgroundClip:i===0?"text":undefined,
+                    color:i===0?undefined:"rgba(200,220,255,.75)",
+                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    {s.name}
+                  </div>
+                  <div style={{fontFamily:"'Orbitron'",fontSize:14,fontWeight:700,
+                    color:s.score>=12?"#00ff88":s.score>=8?"#ffcc00":"#ff6688"}}>
+                    {s.score}<span style={{fontSize:9,opacity:.3}}>/15</span>
+                  </div>
+                  <div style={{fontFamily:"'Share Tech Mono'",fontSize:10,color:"rgba(255,255,255,.2)"}}>{s.time}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{height:28}}/>
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
